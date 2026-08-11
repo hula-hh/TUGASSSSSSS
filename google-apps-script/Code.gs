@@ -1,52 +1,87 @@
 const SHEET_NAME = 'Absensi';
 
-function doGet() {
+function doGet(e) {
+  const params = e && e.parameter ? e.parameter : {};
+  let result;
+
+  if (params.action === 'attendance') {
+    result = recordAttendance(params);
+  } else {
+    result = { ok: true, success: true, message: 'API absensi aktif' };
+  }
+
+  const output = JSON.stringify(result);
+  const callback = params.callback;
+
+  if (callback) {
+    return ContentService
+      .createTextOutput(`${callback}(${output})`)
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+
   return ContentService
-    .createTextOutput(JSON.stringify({ ok: true, message: 'API absensi aktif' }))
+    .createTextOutput(output)
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-function doPost(e) {
+function recordAttendance(data) {
   try {
-    const data = JSON.parse(e.postData.contents);
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+    const nis = String(data.nis || '').trim();
+    const nama = String(data.nama || '').trim();
+    const kelas = String(data.kelas || '').trim();
+    const mapel = String(data.mapel || 'Umum').trim();
 
-    if (!sheet) throw new Error(`Sheet '${SHEET_NAME}' tidak ditemukan.`);
-    if (!data.nis || !data.nama || !data.kelas) throw new Error('Data siswa tidak lengkap.');
-
-    const values = sheet.getDataRange().getValues();
-    const today = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
-
-    const duplicate = values.slice(1).some(row =>
-      String(row[0]) === String(data.nis) && String(row[4]) === today
-    );
-
-    if (duplicate) {
-      return json({ ok: false, status: 'duplicate', message: 'Siswa sudah absen hari ini.' });
+    if (!nis || !nama || !kelas) {
+      return { ok: false, success: false, status: 'error', message: 'Data siswa tidak lengkap.' };
     }
 
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+    if (!sheet) {
+      return { ok: false, success: false, status: 'error', message: `Sheet '${SHEET_NAME}' tidak ditemukan.` };
+    }
+
+    const timezone = SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone() || 'Asia/Jakarta';
     const now = new Date();
-    const date = Utilities.formatDate(now, Session.getScriptTimeZone(), 'yyyy-MM-dd');
-    const time = Utilities.formatDate(now, Session.getScriptTimeZone(), 'HH:mm:ss');
+    const today = Utilities.formatDate(now, timezone, 'yyyy-MM-dd');
+    const time = Utilities.formatDate(now, timezone, 'HH:mm:ss');
 
-    sheet.appendRow([
-      data.nis,
-      data.nama,
-      data.kelas,
-      data.mapel || 'Umum',
-      date,
-      time,
-      data.status || 'Hadir'
-    ]);
+    const lastRow = sheet.getLastRow();
+    if (lastRow > 1) {
+      const values = sheet.getRange(2, 1, lastRow - 1, 7).getValues();
+      const duplicate = values.some(row => {
+        const rowNis = String(row[0]).trim();
+        const rowDate = row[4] instanceof Date
+          ? Utilities.formatDate(row[4], timezone, 'yyyy-MM-dd')
+          : String(row[4]).trim();
+        return rowNis === nis && rowDate === today;
+      });
 
-    return json({ ok: true, status: 'success', message: 'Absensi berhasil disimpan.' });
+      if (duplicate) {
+        return {
+          ok: false,
+          success: false,
+          duplicate: true,
+          status: 'duplicate',
+          message: `${nama} sudah absen hari ini.`
+        };
+      }
+    }
+
+    sheet.appendRow([nis, nama, kelas, mapel, today, time, 'Hadir']);
+
+    return {
+      ok: true,
+      success: true,
+      duplicate: false,
+      status: 'success',
+      message: `Absensi ${nama} berhasil disimpan.`,
+      data: { nis, nama, kelas, mapel, tanggal: today, waktu: time, status: 'Hadir' }
+    };
   } catch (error) {
-    return json({ ok: false, status: 'error', message: error.message });
+    return { ok: false, success: false, status: 'error', message: error.message };
   }
 }
 
-function json(data) {
-  return ContentService
-    .createTextOutput(JSON.stringify(data))
-    .setMimeType(ContentService.MimeType.JSON);
+function doPost(e) {
+  return doGet({ parameter: JSON.parse(e.postData.contents) });
 }
