@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rekap Absensi - Absensi QR</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main class="page">
+    <div class="page-header">
+      <div><p class="eyebrow">REKAP</p><h1>Absensi Hari Ini</h1></div>
+      <div class="actions">
+        <a class="button secondary" href="scanner.html">Scanner</a>
+        <a class="button secondary" href="index.html">Dashboard</a>
+        <button id="clear-data" class="button" type="button">Reset Data</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>No</th><th>Nama</th><th>NIS</th><th>Kelas</th><th>Tanggal</th><th>Waktu</th><th>Status</th></tr></thead>
+        <tbody id="attendance-body"></tbody>
+      </table>
+      <div id="empty" class="empty" hidden>Belum ada data absensi.</div>
+    </div>
+  </main>
+  <script>
+    const KEY = 'absensi_qr_records';
+    const body = document.getElementById('attendance-body');
+    const empty = document.getElementById('empty');
+
+    function render() {
+      const records = JSON.parse(localStorage.getItem(KEY) || '[]').sort((a, b) => b.id - a.id);
+      body.innerHTML = '';
+      empty.hidden = records.length > 0;
+      records.forEach((record, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `<td>${index + 1}</td><td>${record.nama}</td><td>${record.nis}</td><td>${record.kelas}</td><td>${record.tanggal}</td><td>${record.waktu}</td><td><span class="badge">${record.status}</span></td>`;
+        body.appendChild(row);
+      });
+    }
+
+    document.getElementById('clear-data').addEventListener('click', () => {
+      if (confirm('Hapus seluruh data absensi di browser ini?')) {
+        localStorage.removeItem(KEY);
+        render();
+      }
+    });
+
+    render();
+  </script>
+</body>
+</html>
