@@ -1,3 +1,4 @@
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwlXsfOzHtXYSkQWeWPHRqx523TwplWugftV36teujhuS-bAOtY9HDKVYswdqbRW3T1Ug/exec';
 const resultElement = document.getElementById('result');
 const resetButton = document.getElementById('reset-scanner');
 
@@ -9,57 +10,56 @@ const students = [
   { id: 5, nis: '1005', nama: 'Eka Putri', kelas: 'XII IPA 1', qr: 'SISWA-005' }
 ];
 
-const STORAGE_KEY = 'absensi_qr_records';
 let scanner = null;
 let processing = false;
-
-function getRecords() {
-  return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-}
-
-function saveRecords(records) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
-}
 
 function showResult(message, type = 'info') {
   resultElement.textContent = message;
   resultElement.className = `result ${type}`;
 }
 
-function todayKey() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-function recordAttendance(student) {
-  const records = getRecords();
-  const today = todayKey();
-  const alreadyPresent = records.some(record => record.studentId === student.id && record.tanggal === today);
-
-  if (alreadyPresent) {
-    showResult(`${student.nama} sudah absen hari ini.`, 'warning');
-    return;
-  }
-
-  const now = new Date();
-  const waktu = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-
-  records.push({
-    id: Date.now(),
-    studentId: student.id,
+function sendAttendance(student) {
+  const callbackName = `attendanceCallback_${Date.now()}`;
+  const params = new URLSearchParams({
+    action: 'attendance',
     nis: student.nis,
     nama: student.nama,
     kelas: student.kelas,
-    tanggal: today,
-    waktu,
-    status: 'Hadir'
+    mapel: 'Informatika',
+    callback: callbackName
   });
 
-  saveRecords(records);
-  showResult(`Absensi berhasil: ${student.nama} • ${waktu}`, 'success');
+  const script = document.createElement('script');
+  const timeout = setTimeout(() => {
+    cleanup();
+    showResult('Server Google Sheets tidak merespons. Coba lagi.', 'error');
+  }, 10000);
+
+  function cleanup() {
+    clearTimeout(timeout);
+    delete window[callbackName];
+    script.remove();
+  }
+
+  window[callbackName] = (response) => {
+    cleanup();
+
+    if (response && response.success) {
+      showResult(response.message, 'success');
+    } else if (response && response.duplicate) {
+      showResult(response.message, 'warning');
+    } else {
+      showResult(response?.message || 'Absensi gagal disimpan.', 'error');
+    }
+  };
+
+  script.onerror = () => {
+    cleanup();
+    showResult('Gagal terhubung ke Google Sheets.', 'error');
+  };
+
+  script.src = `${APPS_SCRIPT_URL}?${params.toString()}`;
+  document.body.appendChild(script);
 }
 
 function handleScan(decodedText) {
@@ -72,7 +72,8 @@ function handleScan(decodedText) {
   if (!student) {
     showResult('Barcode tidak valid. Siswa tidak terdaftar.', 'error');
   } else {
-    recordAttendance(student);
+    showResult(`Memproses absensi ${student.nama}...`, 'info');
+    sendAttendance(student);
   }
 
   setTimeout(() => {
