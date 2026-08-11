@@ -3,21 +3,64 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Absensi QR - Dashboard</title>
+  <meta name="theme-color" content="#111827">
+  <title>Attendify — Sistem Absensi QR</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
-<body>
-  <main class="container">
-    <section class="hero">
-      <p class="eyebrow">SISTEM ABSENSI</p>
-      <h1>Absensi QR Code</h1>
-      <p class="subtitle">Sistem absensi siswa berbasis QR Code dengan validasi dan pencegahan absensi ganda.</p>
-      <div class="actions">
-        <a class="button" href="scanner.html">Buka Scanner</a>
-        <a class="button secondary" href="attendance.html">Lihat Rekap</a>
-        <a class="button secondary" href="students.html">Daftar Siswa</a>
+<body class="dashboard-body">
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
+
+  <main class="dashboard page">
+    <nav class="topbar">
+      <a class="brand" href="index.html"><span class="brand-mark">A</span><span>Attendify</span></a>
+      <span class="status-pill"><span class="status-dot"></span> Sistem aktif</span>
+    </nav>
+
+    <section class="dashboard-hero">
+      <div class="hero-copy">
+        <p class="eyebrow">SMART ATTENDANCE SYSTEM</p>
+        <h1>Absensi kelas,<br><span>lebih cepat & rapi.</span></h1>
+        <p class="subtitle">Scan QR Code, validasi otomatis, dan simpan ke Google Sheets tanpa ribet. Dibuat untuk absensi kelas yang simpel tapi kelihatan niat.</p>
+        <div class="actions">
+          <a class="button primary-button" href="scanner.html"><span>▣</span> Mulai Absen</a>
+          <a class="button glass-button" href="attendance.html">Lihat Rekap <span>→</span></a>
+        </div>
+      </div>
+      <div class="hero-card">
+        <div class="hero-card-top"><span>ABSENSI QR</span><span class="live-dot">● LIVE</span></div>
+        <div class="scan-icon"><span>⌁</span></div>
+        <strong>Scan sekali.</strong>
+        <p>Data langsung diproses dan duplikasi ditolak otomatis.</p>
+        <div class="mini-line"><span></span><span></span><span></span><span></span></div>
       </div>
     </section>
+
+    <section class="quick-grid">
+      <a class="feature-card feature-main" href="scanner.html">
+        <div class="feature-icon">⌗</div>
+        <div><span class="card-label">01 · ABSENSI</span><h2>QR Scanner</h2><p>Gunakan kamera untuk mencatat kehadiran siswa.</p></div>
+        <span class="arrow">↗</span>
+      </a>
+      <a class="feature-card" href="students.html">
+        <div class="feature-icon soft">♙</div>
+        <div><span class="card-label">02 · SISWA</span><h2>QR Siswa</h2><p>Tampilkan QR masing-masing siswa.</p></div>
+        <span class="arrow">↗</span>
+      </a>
+      <a class="feature-card" href="attendance.html">
+        <div class="feature-icon soft">☷</div>
+        <div><span class="card-label">03 · REKAP</span><h2>Data Absensi</h2><p>Lihat riwayat absensi dengan lebih teratur.</p></div>
+        <span class="arrow">↗</span>
+      </a>
+    </section>
+
+    <section class="trust-row">
+      <div><strong>QR VALIDATION</strong><span>Hanya siswa terdaftar</span></div>
+      <div><strong>ANTI DUPLICATE</strong><span>Satu absensi per hari</span></div>
+      <div><strong>GOOGLE SHEETS</strong><span>Data tersimpan terpusat</span></div>
+    </section>
+
+    <footer>Attendify · Sistem Absensi QR untuk pembelajaran</footer>
   </main>
 </body>
 </html>
