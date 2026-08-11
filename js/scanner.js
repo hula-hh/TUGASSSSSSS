@@ -30,19 +30,20 @@ function sendAttendance(student) {
   });
 
   const script = document.createElement('script');
-  const timeout = setTimeout(() => {
-    cleanup();
-    showResult('Server Google Sheets tidak merespons. Coba lagi.', 'error');
-  }, 10000);
+  let finished = false;
 
-  function cleanup() {
+  const finish = (response, type = 'response') => {
+    if (finished) return;
+    finished = true;
     clearTimeout(timeout);
     delete window[callbackName];
     script.remove();
-  }
+    processing = false;
 
-  window[callbackName] = (response) => {
-    cleanup();
+    if (type === 'error') {
+      showResult('Gagal terhubung ke Google Sheets.', 'error');
+      return;
+    }
 
     if (response && response.success) {
       showResult(response.message, 'success');
@@ -53,17 +54,25 @@ function sendAttendance(student) {
     }
   };
 
-  script.onerror = () => {
-    cleanup();
-    showResult('Gagal terhubung ke Google Sheets.', 'error');
-  };
+  const timeout = setTimeout(() => {
+    if (finished) return;
+    finished = true;
+    delete window[callbackName];
+    script.remove();
+    processing = false;
+    showResult('Server Google Sheets tidak merespons. Coba lagi.', 'error');
+  }, 10000);
 
+  window[callbackName] = (response) => finish(response);
+
+  script.onerror = () => finish(null, 'error');
   script.src = `${APPS_SCRIPT_URL}?${params.toString()}`;
   document.body.appendChild(script);
 }
 
 function handleScan(decodedText) {
   if (processing || !decodedText) return;
+
   processing = true;
 
   const code = decodedText.trim().toUpperCase();
@@ -71,14 +80,12 @@ function handleScan(decodedText) {
 
   if (!student) {
     showResult('Barcode tidak valid. Siswa tidak terdaftar.', 'error');
-  } else {
-    showResult(`Memproses absensi ${student.nama}...`, 'info');
-    sendAttendance(student);
+    processing = false;
+    return;
   }
 
-  setTimeout(() => {
-    processing = false;
-  }, 2500);
+  showResult(`Memproses absensi ${student.nama}...`, 'info');
+  sendAttendance(student);
 }
 
 async function startScanner() {
