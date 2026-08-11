@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daftar Siswa - Absensi QR</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+  <main class="page">
+    <div class="page-header">
+      <div><p class="eyebrow">DATA SISWA</p><h1>QR Siswa</h1></div>
+      <a class="button secondary" href="index.html">Dashboard</a>
+    </div>
+    <div id="student-list" class="student-grid"></div>
+  </main>
+  <script>
+    const students = [
+      { nama: 'Andi Pratama', nis: '1001', kelas: 'XII IPA 1', qr: 'SISWA-001' },
+      { nama: 'Budi Santoso', nis: '1002', kelas: 'XII IPA 1', qr: 'SISWA-002' },
+      { nama: 'Citra Lestari', nis: '1003', kelas: 'XII IPA 1', qr: 'SISWA-003' },
+      { nama: 'Dimas Saputra', nis: '1004', kelas: 'XII IPA 1', qr: 'SISWA-004' },
+      { nama: 'Eka Putri', nis: '1005', kelas: 'XII IPA 1', qr: 'SISWA-005' }
+    ];
+    const list = document.getElementById('student-list');
+    students.forEach((student, index) => {
+      const card = document.createElement('article');
+      card.className = 'student-card';
+      card.innerHTML = `<div id="qr-${index}" class="qr-box"></div><h3>${student.nama}</h3><p>NIS: ${student.nis} · ${student.kelas}</p><code>${student.qr}</code>`;
+      list.appendChild(card);
+      new QRCode(document.getElementById(`qr-${index}`), { text: student.qr, width: 150, height: 150 });
+    });
+  </script>
+</body>
+</html>
