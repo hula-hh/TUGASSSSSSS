@@ -1,3 +1,4 @@
+const SPREADSHEET_ID = '1PVgC6t2f691SHqc2E1fcEckOmBYBD1P6Zf5gYE5yKvA';
 const SHEET_NAME = 'Absensi';
 
 function doGet(e) {
@@ -35,12 +36,18 @@ function recordAttendance(data) {
       return { ok: false, success: false, status: 'error', message: 'Data siswa tidak lengkap.' };
     }
 
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+    // Gunakan ID spreadsheet secara eksplisit supaya tidak salah spreadsheet.
+    const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+    let sheet = spreadsheet.getSheetByName(SHEET_NAME);
+
     if (!sheet) {
-      return { ok: false, success: false, status: 'error', message: `Sheet '${SHEET_NAME}' tidak ditemukan.` };
+      sheet = spreadsheet.insertSheet(SHEET_NAME);
+      sheet.appendRow(['NIS', 'Nama', 'Kelas', 'Mata Pelajaran', 'Tanggal', 'Waktu', 'Status']);
+    } else if (sheet.getLastRow() === 0) {
+      sheet.appendRow(['NIS', 'Nama', 'Kelas', 'Mata Pelajaran', 'Tanggal', 'Waktu', 'Status']);
     }
 
-    const timezone = SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone() || 'Asia/Jakarta';
+    const timezone = spreadsheet.getSpreadsheetTimeZone() || 'Asia/Jakarta';
     const now = new Date();
     const today = Utilities.formatDate(now, timezone, 'yyyy-MM-dd');
     const time = Utilities.formatDate(now, timezone, 'HH:mm:ss');
