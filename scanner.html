@@ -5,15 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Scanner QR - Absensi</title>
   <link rel="stylesheet" href="css/style.css">
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 </head>
 <body>
   <main class="container">
-    <section class="hero">
+    <section class="hero scanner-card">
       <p class="eyebrow">ABSENSI SISWA</p>
       <h1>Scanner QR</h1>
-      <p class="subtitle">Halaman scanner akan kita bangun pada tahap berikutnya.</p>
-      <a class="button" href="index.html">Kembali</a>
+      <p class="subtitle">Arahkan kamera ke QR Code siswa.</p>
+      <div id="reader"></div>
+      <div id="result" class="result info">Menyiapkan scanner...</div>
+      <button id="reset-scanner" class="button" type="button">Scan Lagi</button>
+      <a class="back-link" href="index.html">Kembali ke Dashboard</a>
     </section>
   </main>
+  <script src="js/scanner.js"></script>
 </body>
 </html>
