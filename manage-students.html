@@ -1,76 +1,25 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kelola Siswa - Attendify</title>
-  <link rel="stylesheet" href="css/style.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <style>
-    .form-card,.student-card{background:#fff;border-radius:18px;padding:22px;box-shadow:0 10px 30px rgba(23,32,51,.06)}
-    .form-card{margin-bottom:22px}
-    .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}
-    label{display:block;font-size:13px;font-weight:700;margin-bottom:7px}
-    input{width:100%;padding:12px;border:1px solid #d8dee8;border-radius:10px;font:inherit}
-    .student-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px}
-    .student-card{text-align:center}
-    .qr-box{display:grid;place-items:center;min-height:150px;margin-bottom:12px}
-    .student-card h3{margin:8px 0 5px}.student-card p{margin:5px;color:#667085;font-size:14px}
-    .danger{background:#fff0f0;color:#b42318}.status{margin:12px 0;padding:12px;border-radius:10px;font-weight:700}
-    .status.success{background:#eaf8ef;color:#18733d}.status.error{background:#ffeded;color:#b42318}
-  </style>
-</head>
-<body>
-<main class="page">
-  <div class="page-header">
-    <div><p class="eyebrow">ADMIN</p><h1>Kelola Siswa</h1><p class="subtitle">Tambah dan kelola data siswa untuk QR absensi.</p></div>
-    <div class="actions"><a class="button secondary" href="students.html">QR Siswa</a><a class="button secondary" href="index.html">Dashboard</a></div>
-  </div>
-
-  <section class="form-card">
-    <h2>Tambah Siswa</h2>
-    <div class="form-grid">
-      <div><label for="nis">NIS</label><input id="nis" placeholder="1006"></div>
-      <div><label for="nama">Nama Lengkap</label><input id="nama" placeholder="Nama siswa"></div>
-      <div><label for="kelas">Kelas</label><input id="kelas" placeholder="XII IPA 1"></div>
-    </div>
-    <button id="save" class="button" style="margin-top:16px">+ Tambah Siswa</button>
-    <div id="status" hidden></div>
-  </section>
-
-  <section>
-    <h2>Daftar Siswa</h2>
-    <div id="student-list" class="student-grid"></div>
-  </section>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kelola Siswa - Attendify</title><link rel="stylesheet" href="css/style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+.form-card,.student-card{background:#fff;border-radius:18px;padding:22px;box-shadow:0 10px 30px rgba(23,32,51,.06)}.form-card{margin-bottom:22px}.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}label{display:block;font-size:13px;font-weight:700;margin-bottom:7px}input{width:100%;padding:12px;border:1px solid #d8dee8;border-radius:10px;font:inherit}.student-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px}.student-card{text-align:center}.qr-box{display:grid;place-items:center;min-height:150px;margin-bottom:12px}.student-card h3{margin:8px 0 5px}.student-card p{margin:5px;color:#667085;font-size:14px}.danger{background:#fff0f0;color:#b42318}.status{margin:12px 0;padding:12px;border-radius:10px;font-weight:700}.status.success{background:#eaf8ef;color:#18733d}.status.error{background:#ffeded;color:#b42318}
+</style></head>
+<body><main class="page">
+<div class="page-header"><div><p class="eyebrow">ADMIN</p><h1>Kelola Siswa</h1><p class="subtitle">Tambah siswa dan buat QR absensi.</p></div><div class="actions"><a class="button secondary" href="students.html">QR Siswa</a><a class="button secondary" href="index.html">Dashboard</a></div></div>
+<section class="form-card"><h2>Tambah Siswa</h2><div class="form-grid"><div><label>NIS</label><input id="nis" placeholder="1006"></div><div><label>Nama Lengkap</label><input id="nama" placeholder="Nama siswa"></div><div><label>Kelas</label><input id="kelas" placeholder="XII IPA 1"></div></div><button id="save" class="button" style="margin-top:16px">+ Tambah Siswa</button><div id="status" hidden></div></section>
+<section><h2>Daftar Siswa</h2><div id="student-list" class="student-grid"></div></section>
 </main>
 <script>
-const KEY='attendify_students';
-const list=document.getElementById('student-list');
-const status=document.getElementById('status');
-function getStudents(){return JSON.parse(localStorage.getItem(KEY)||'[]')}
-function saveStudents(data){localStorage.setItem(KEY,JSON.stringify(data))}
-function showStatus(text,type){status.hidden=false;status.className='status '+type;status.textContent=text}
-function render(){
- const students=getStudents(); list.innerHTML='';
- if(!students.length){list.innerHTML='<div class="empty">Belum ada siswa tambahan.</div>';return}
- students.forEach((s,i)=>{
-  const card=document.createElement('article');card.className='student-card';
-  card.innerHTML=`<div id="qr-${i}" class="qr-box"></div><h3>${s.nama}</h3><p>NIS: ${s.nis}</p><p>${s.kelas}</p><code>${s.qr}</code><br><button class="button danger" style="margin-top:12px" data-index="${i}">Hapus</button>`;
-  list.appendChild(card);new QRCode(document.getElementById('qr-'+i),{text:s.qr,width:150,height:150});
-  card.querySelector('button').onclick=()=>{const data=getStudents();data.splice(i,1);saveStudents(data);render()};
- });
-}
-document.getElementById('save').onclick=()=>{
- const nis=document.getElementById('nis').value.trim(),nama=document.getElementById('nama').value.trim(),kelas=document.getElementById('kelas').value.trim();
- if(!nis||!nama||!kelas){showStatus('Isi NIS, nama, dan kelas dulu.','error');return}
- const data=getStudents();
- if(data.some(s=>s.nis===nis)){showStatus('NIS tersebut sudah terdaftar.','error');return}
- const qr='SISWA-'+nis;
- data.push({nis,nama,kelas,qr});saveStudents(data);
- document.getElementById('nis').value='';document.getElementById('nama').value='';document.getElementById('kelas').value='';
- showStatus('Siswa berhasil ditambahkan.','success');render();
-};
-render();
-</script>
-</body>
-</html>
+const API='https://script.google.com/macros/s/AKfycbwlXsfOzHtXYSkQWeWPHRqx523TwplWugftV36teujhuS-bAOtY9HDKVYswdqbRW3T1Ug/exec';
+const list=document.getElementById('student-list'),status=document.getElementById('status');
+function showStatus(t,type){status.hidden=false;status.className='status '+type;status.textContent=t}
+function jsonp(params){return new Promise((resolve,reject)=>{const cb='cb_'+Date.now()+'_'+Math.random().toString(36).slice(2);const script=document.createElement('script');const query=new URLSearchParams({...params,callback:cb});const timer=setTimeout(()=>{cleanup();reject(new Error('Server tidak merespons.'))},10000);function cleanup(){clearTimeout(timer);delete window[cb];script.remove()}window[cb]=(data)=>{cleanup();resolve(data)};script.onerror=()=>{cleanup();reject(new Error('Gagal terhubung ke server.'))};script.src=API+'?'+query.toString();document.body.appendChild(script)})}
+async function loadStudents(){list.innerHTML='<p>Memuat data siswa...</p>';try{const r=await jsonp({action:'students'});if(!r.success)throw new Error(r.message);render(r.students||[])}catch(e){list.innerHTML='<p>Gagal memuat siswa: '+e.message+'</p>'}}
+function render(students){list.innerHTML='';if(!students.length){list.innerHTML='<p>Belum ada siswa.</p>';return}students.forEach((s,i)=>{const card=document.createElement('article');card.className='student-card';card.innerHTML='<div id="qr-'+i+'" class="qr-box"></div><h3>'+escapeHtml(s.nama)+'</h3><p>NIS: '+escapeHtml(s.nis)+'</p><p>'+escapeHtml(s.kelas)+'</p><code>'+escapeHtml(s.qr)+'</code><br><button class="button danger" style="margin-top:12px">Hapus</button>';list.appendChild(card);new QRCode(document.getElementById('qr-'+i),{text:s.qr,width:150,height:150});card.querySelector('button').onclick=async()=>{if(!confirm('Hapus '+s.nama+'?'))return;try{const r=await jsonp({action:'deleteStudent',nis:s.nis});if(!r.success)throw new Error(r.message);showStatus('Siswa berhasil dihapus.','success');loadStudents()}catch(e){showStatus(e.message,'error')}}})}
+function escapeHtml(v){return String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
+document.getElementById('save').onclick=async()=>{const nis=document.getElementById('nis').value.trim(),nama=document.getElementById('nama').value.trim(),kelas=document.getElementById('kelas').value.trim();if(!nis||!nama||!kelas){showStatus('Isi NIS, nama, dan kelas dulu.','error');return}const btn=document.getElementById('save');btn.disabled=true;btn.textContent='Menyimpan...';try{const r=await jsonp({action:'addStudent',nis,nama,kelas});if(!r.success)throw new Error(r.message);document.getElementById('nis').value='';document.getElementById('nama').value='';document.getElementById('kelas').value='';showStatus('Siswa berhasil ditambahkan ke Google Sheets.','success');loadStudents()}catch(e){showStatus(e.message,'error')}finally{btn.disabled=false;btn.textContent='+ Tambah Siswa'}};
+loadStudents();
+</script></body></html>
