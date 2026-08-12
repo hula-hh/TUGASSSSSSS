@@ -3,17 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QR Siswa - Absensi</title>
+  <title>QR Siswa - Attendify</title>
   <link rel="stylesheet" href="css/style.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
-    .student-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; margin-top: 28px; }
-    .student-card { padding: 22px; border: 1px solid #e5e7eb; border-radius: 16px; background: #fff; text-align: center; }
-    .student-card h3 { margin: 12px 0 6px; }
-    .student-card p { margin: 5px 0; color: #667085; }
-    .qr-box { min-height: 150px; display: grid; place-items: center; }
-    .student-card code { display: inline-block; margin-top: 8px; padding: 5px 8px; border-radius: 6px; background: #f2f4f7; }
-    .back-link { display: inline-block; margin-top: 24px; color: #172033; }
+    .student-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:18px; margin-top:28px; }
+    .student-card { padding:22px; border:1px solid #e5e7eb; border-radius:16px; background:#fff; text-align:center; }
+    .student-card h3 { margin:12px 0 6px; }.student-card p { margin:5px 0;color:#667085; }
+    .qr-box { min-height:150px; display:grid; place-items:center; }.student-card code { display:inline-block;margin-top:8px;padding:5px 8px;border-radius:6px;background:#f2f4f7; }
+    .state { margin-top:28px;padding:18px;border-radius:14px;background:#fff;border:1px solid #e5e7eb;text-align:center; }
+    .back-link { display:inline-block;margin-top:24px;color:#172033; }
   </style>
 </head>
 <body>
@@ -21,29 +20,20 @@
     <section class="hero">
       <p class="eyebrow">DATA SISWA</p>
       <h1>QR Code Siswa</h1>
-      <p class="subtitle">Buka halaman ini di HP untuk menampilkan QR, lalu scan menggunakan perangkat yang membuka Scanner.</p>
+      <p class="subtitle">QR di halaman ini selalu mengambil data terbaru dari database siswa.</p>
+      <div id="state" class="state">Memuat data siswa...</div>
       <div id="student-list" class="student-grid"></div>
       <a class="back-link" href="index.html">Kembali ke Dashboard</a>
     </section>
   </main>
-
   <script>
-    const students = [
-      { nama: 'Andi Pratama', nis: '1001', kelas: 'XII IPA 1', qr: 'SISWA-001' },
-      { nama: 'Budi Santoso', nis: '1002', kelas: 'XII IPA 1', qr: 'SISWA-002' },
-      { nama: 'Citra Lestari', nis: '1003', kelas: 'XII IPA 1', qr: 'SISWA-003' },
-      { nama: 'Dimas Saputra', nis: '1004', kelas: 'XII IPA 1', qr: 'SISWA-004' },
-      { nama: 'Eka Putri', nis: '1005', kelas: 'XII IPA 1', qr: 'SISWA-005' }
-    ];
-
-    const list = document.getElementById('student-list');
-    students.forEach((student, index) => {
-      const card = document.createElement('article');
-      card.className = 'student-card';
-      card.innerHTML = `<div id="qr-${index}" class="qr-box"></div><h3>${student.nama}</h3><p>NIS: ${student.nis} · ${student.kelas}</p><code>${student.qr}</code>`;
-      list.appendChild(card);
-      new QRCode(document.getElementById(`qr-${index}`), { text: student.qr, width: 150, height: 150 });
-    });
+    const API='https://script.google.com/macros/s/AKfycbwlXsfOzHtXYSkQWeWPHRqx523TwplWugftV36teujhuS-bAOtY9HDKVYswdqbRW3T1Ug/exec';
+    const list=document.getElementById('student-list');
+    const state=document.getElementById('state');
+    function jsonp(params){return new Promise((resolve,reject)=>{const cb='cb_'+Date.now()+'_'+Math.random().toString(36).slice(2);const script=document.createElement('script');const query=new URLSearchParams({...params,callback:cb});const timer=setTimeout(()=>{cleanup();reject(new Error('Server tidak merespons.'))},10000);function cleanup(){clearTimeout(timer);delete window[cb];script.remove()}window[cb]=data=>{cleanup();resolve(data)};script.onerror=()=>{cleanup();reject(new Error('Gagal terhubung ke server.'))};script.src=API+'?'+query.toString();document.body.appendChild(script)})}
+    function escapeHtml(v){return String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
+    async function load(){try{const r=await jsonp({action:'students'});if(!r.success)throw new Error(r.message);list.innerHTML='';if(!r.students.length){state.textContent='Belum ada siswa di database.';return}state.textContent=r.students.length+' siswa terdaftar';r.students.forEach((s,i)=>{const card=document.createElement('article');card.className='student-card';card.innerHTML=`<div id="qr-${i}" class="qr-box"></div><h3>${escapeHtml(s.nama)}</h3><p>NIS: ${escapeHtml(s.nis)} · ${escapeHtml(s.kelas)}</p><code>${escapeHtml(s.qr)}</code>`;list.appendChild(card);new QRCode(document.getElementById('qr-'+i),{text:s.qr,width:150,height:150})})}catch(e){state.textContent='Gagal memuat data: '+e.message}}
+    load();
   </script>
 </body>
 </html>
