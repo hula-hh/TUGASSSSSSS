@@ -2,24 +2,81 @@ const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwlXsfOzHtXYSkQ
 const resultElement = document.getElementById('result');
 const resetButton = document.getElementById('reset-scanner');
 
-const students = [
-  { id: 1, nis: '1001', nama: 'Andi Pratama', kelas: 'XII IPA 1', qr: 'SISWA-001' },
-  { id: 2, nis: '1002', nama: 'Budi Santoso', kelas: 'XII IPA 1', qr: 'SISWA-002' },
-  { id: 3, nis: '1003', nama: 'Citra Lestari', kelas: 'XII IPA 1', qr: 'SISWA-003' },
-  { id: 4, nis: '1004', nama: 'Dimas Saputra', kelas: 'XII IPA 1', qr: 'SISWA-004' },
-  { id: 5, nis: '1005', nama: 'Eka Putri', kelas: 'XII IPA 1', qr: 'SISWA-005' }
-];
-
 let scanner = null;
 let processing = false;
+let students = [];
 
 function showResult(message, type = 'info') {
   resultElement.textContent = message;
   resultElement.className = `result ${type}`;
 }
 
+function jsonp(params) {
+  return new Promise((resolve, reject) => {
+    const callbackName = `studentCallback_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const script = document.createElement('script');
+    const query = new URLSearchParams({ ...params, callback: callbackName });
+    let finished = false;
+
+    const cleanup = () => {
+      clearTimeout(timeout);
+      delete window[callbackName];
+      script.remove();
+    };
+
+    const timeout = setTimeout(() => {
+      if (finished) return;
+      finished = true;
+      cleanup();
+      reject(new Error('Server tidak merespons.'));
+    }, 10000);
+
+    window[callbackName] = (data) => {
+      if (finished) return;
+      finished = true;
+      cleanup();
+      resolve(data);
+    };
+
+    script.onerror = () => {
+      if (finished) return;
+      finished = true;
+      cleanup();
+      reject(new Error('Gagal terhubung ke server.'));
+    };
+
+    script.src = `${APPS_SCRIPT_URL}?${query.toString()}`;
+    document.body.appendChild(script);
+  });
+}
+
+async function loadStudents() {
+  showResult('Memuat database siswa...', 'info');
+
+  try {
+    const response = await jsonp({ action: 'students' });
+
+    if (!response.success) {
+      throw new Error(response.message || 'Gagal mengambil data siswa.');
+    }
+
+    students = response.students || [];
+
+    if (!students.length) {
+      showResult('Belum ada siswa di database.', 'warning');
+      return false;
+    }
+
+    showResult(`${students.length} siswa siap. Arahkan QR ke scanner.`, 'info');
+    return true;
+  } catch (error) {
+    showResult(`Gagal memuat data siswa: ${error.message}`, 'error');
+    return false;
+  }
+}
+
 function sendAttendance(student) {
-  const callbackName = `attendanceCallback_${Date.now()}`;
+  const callbackName = `attendanceCallback_${Date.now()}_${Math.random().toString(36).slice(2)}`;
   const params = new URLSearchParams({
     action: 'attendance',
     nis: student.nis,
@@ -64,7 +121,6 @@ function sendAttendance(student) {
   }, 10000);
 
   window[callbackName] = (response) => finish(response);
-
   script.onerror = () => finish(null, 'error');
   script.src = `${APPS_SCRIPT_URL}?${params.toString()}`;
   document.body.appendChild(script);
@@ -74,13 +130,18 @@ function handleScan(decodedText) {
   if (processing || !decodedText) return;
 
   processing = true;
-
   const code = decodedText.trim().toUpperCase();
-  const student = students.find(item => item.qr.toUpperCase() === code);
+
+  // Cari QR berdasarkan database Google Sheets, bukan data hard-code.
+  const student = students.find(
+    item => String(item.qr).trim().toUpperCase() === code
+  );
 
   if (!student) {
     showResult('Barcode tidak valid. Siswa tidak terdaftar.', 'error');
-    processing = false;
+    setTimeout(() => {
+      processing = false;
+    }, 1500);
     return;
   }
 
@@ -89,7 +150,9 @@ function handleScan(decodedText) {
 }
 
 async function startScanner() {
-  showResult('Meminta akses kamera...', 'info');
+  const ready = await loadStudents();
+  if (!ready) return;
+
   scanner = new Html5Qrcode('reader');
 
   try {
