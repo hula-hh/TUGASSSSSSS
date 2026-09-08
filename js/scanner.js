@@ -5,6 +5,7 @@ const resetButton = document.getElementById('reset-scanner');
 let scanner = null;
 let processing = false;
 let students = [];
+let selectedMapel = 'Informatika';
 
 function showResult(message, type = 'info') {
   resultElement.textContent = message;
@@ -67,7 +68,7 @@ async function loadStudents() {
       return false;
     }
 
-    showResult(`${students.length} siswa siap. Arahkan QR ke scanner.`, 'info');
+    showResult(`${students.length} siswa siap. Pilih mapel lalu scan QR.`, 'info');
     return true;
   } catch (error) {
     showResult(`Gagal memuat data siswa: ${error.message}`, 'error');
@@ -82,7 +83,7 @@ function sendAttendance(student) {
     nis: student.nis,
     nama: student.nama,
     kelas: student.kelas,
-    mapel: 'Informatika',
+    mapel: selectedMapel,
     callback: callbackName
   });
 
@@ -131,21 +132,17 @@ function handleScan(decodedText) {
 
   processing = true;
   const code = decodedText.trim().toUpperCase();
-
-  // Cari QR berdasarkan database Google Sheets, bukan data hard-code.
   const student = students.find(
     item => String(item.qr).trim().toUpperCase() === code
   );
 
   if (!student) {
     showResult('Barcode tidak valid. Siswa tidak terdaftar.', 'error');
-    setTimeout(() => {
-      processing = false;
-    }, 1500);
+    setTimeout(() => { processing = false; }, 1500);
     return;
   }
 
-  showResult(`Memproses absensi ${student.nama}...`, 'info');
+  showResult(`Memproses absensi ${student.nama} — ${selectedMapel}...`, 'info');
   sendAttendance(student);
 }
 
@@ -162,14 +159,33 @@ async function startScanner() {
       handleScan,
       () => {}
     );
-    showResult('Kamera aktif. Arahkan QR Code ke kotak scanner.', 'info');
+    showResult(`Kamera aktif. Mapel: ${selectedMapel}. Arahkan QR ke scanner.`, 'info');
   } catch (error) {
     showResult('Kamera tidak dapat diakses. Izinkan kamera dan gunakan HTTPS/localhost.', 'error');
   }
 }
 
-resetButton.addEventListener('click', () => {
-  window.location.reload();
+resetButton.addEventListener('click', () => window.location.reload());
+
+// Pilihan mata pelajaran dibuat otomatis di atas scanner.
+const mapelWrapper = document.createElement('div');
+mapelWrapper.style.margin = '16px 0';
+mapelWrapper.innerHTML = `
+  <label for="mapel-select" style="display:block;font-weight:700;margin-bottom:8px">Mata Pelajaran</label>
+  <select id="mapel-select" style="width:100%;padding:12px;border-radius:10px;border:1px solid #d8dee8;font:inherit">
+    <option>Informatika</option>
+    <option>Matematika</option>
+    <option>Biologi</option>
+    <option>Fisika</option>
+    <option>Kimia</option>
+    <option>Bahasa Indonesia</option>
+    <option>Bahasa Inggris</option>
+  </select>`;
+document.getElementById('reader').before(mapelWrapper);
+
+document.getElementById('mapel-select').addEventListener('change', (event) => {
+  selectedMapel = event.target.value;
+  if (!processing) showResult(`Mapel dipilih: ${selectedMapel}. Silakan scan QR.`, 'info');
 });
 
 startScanner();
