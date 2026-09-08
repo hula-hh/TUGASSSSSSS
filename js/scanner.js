@@ -103,10 +103,16 @@ function sendAttendance(student) {
       return;
     }
 
-    if (response && response.success) {
-      showResult(`${student.nama} berhasil absen di ${selectedMapel}.`, 'success');
-    } else if (response && response.duplicate) {
+    const isDuplicate = response && (
+      response.duplicate === true ||
+      response.status === 'duplicate' ||
+      String(response.message || '').toLowerCase().includes('sudah absen')
+    );
+
+    if (isDuplicate) {
       showResult(`${student.nama} sudah absen di mata pelajaran ${selectedMapel} hari ini.`, 'warning');
+    } else if (response && response.success) {
+      showResult(`${student.nama} berhasil absen di ${selectedMapel}.`, 'success');
     } else {
       showResult(response?.message || 'Absensi gagal disimpan.', 'error');
     }
@@ -167,7 +173,6 @@ async function startScanner() {
 
 resetButton.addEventListener('click', () => window.location.reload());
 
-// Pilihan mata pelajaran dibuat otomatis di atas scanner.
 const mapelWrapper = document.createElement('div');
 mapelWrapper.style.margin = '16px 0';
 mapelWrapper.innerHTML = `
