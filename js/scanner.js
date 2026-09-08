@@ -6,6 +6,8 @@ let scanner = null;
 let processing = false;
 let students = [];
 let selectedMapel = 'Informatika';
+let lastScanCode = '';
+let lastScanTime = 0;
 
 function showResult(message, type = 'info') {
   resultElement.textContent = message;
@@ -53,21 +55,14 @@ function jsonp(params) {
 
 async function loadStudents() {
   showResult('Memuat database siswa...', 'info');
-
   try {
     const response = await jsonp({ action: 'students' });
-
-    if (!response.success) {
-      throw new Error(response.message || 'Gagal mengambil data siswa.');
-    }
-
+    if (!response.success) throw new Error(response.message || 'Gagal mengambil data siswa.');
     students = response.students || [];
-
     if (!students.length) {
       showResult('Belum ada siswa di database.', 'warning');
       return false;
     }
-
     showResult(`${students.length} siswa siap. Pilih mapel lalu scan QR.`, 'info');
     return true;
   } catch (error) {
@@ -111,8 +106,13 @@ function sendAttendance(student) {
 
     if (isDuplicate) {
       showResult(`${student.nama} sudah absen di mata pelajaran ${selectedMapel} hari ini.`, 'warning');
+      // Jangan proses QR yang sama lagi selama 5 detik setelah server selesai.
+      lastScanCode = student.qr.trim().toUpperCase();
+      lastScanTime = Date.now();
     } else if (response && response.success) {
       showResult(`${student.nama} berhasil absen di ${selectedMapel}.`, 'success');
+      lastScanCode = student.qr.trim().toUpperCase();
+      lastScanTime = Date.now();
     } else {
       showResult(response?.message || 'Absensi gagal disimpan.', 'error');
     }
@@ -136,15 +136,27 @@ function sendAttendance(student) {
 function handleScan(decodedText) {
   if (processing || !decodedText) return;
 
-  processing = true;
   const code = decodedText.trim().toUpperCase();
+  const now = Date.now();
+
+  // Scanner kamera membaca QR berkali-kali per detik.
+  // QR yang sama diabaikan selama 5 detik.
+  if (code === lastScanCode && now - lastScanTime < 5000) return;
+
+  lastScanCode = code;
+  lastScanTime = now;
+  processing = true;
+
   const student = students.find(
     item => String(item.qr).trim().toUpperCase() === code
   );
 
   if (!student) {
     showResult('Barcode tidak valid. Siswa tidak terdaftar.', 'error');
-    setTimeout(() => { processing = false; }, 1500);
+    setTimeout(() => {
+      processing = false;
+      lastScanCode = '';
+    }, 1500);
     return;
   }
 
@@ -190,6 +202,7 @@ document.getElementById('reader').before(mapelWrapper);
 
 document.getElementById('mapel-select').addEventListener('change', (event) => {
   selectedMapel = event.target.value;
+  lastScanCode = '';
   if (!processing) showResult(`Mapel dipilih: ${selectedMapel}. Silakan scan QR.`, 'info');
 });
 
