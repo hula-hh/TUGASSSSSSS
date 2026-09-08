@@ -104,9 +104,9 @@ function sendAttendance(student) {
     }
 
     if (response && response.success) {
-      showResult(response.message, 'success');
+      showResult(`${student.nama} berhasil absen di ${selectedMapel}.`, 'success');
     } else if (response && response.duplicate) {
-      showResult(response.message, 'warning');
+      showResult(`${student.nama} sudah absen di mata pelajaran ${selectedMapel} hari ini.`, 'warning');
     } else {
       showResult(response?.message || 'Absensi gagal disimpan.', 'error');
     }
