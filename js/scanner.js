@@ -8,6 +8,7 @@ let students = [];
 let selectedMapel = 'Informatika';
 let lastScanCode = '';
 let lastScanTime = 0;
+let attendedKeys = new Set();
 
 function showResult(message, type = 'info') {
   resultElement.textContent = message;
@@ -105,11 +106,13 @@ function sendAttendance(student) {
     );
 
     if (isDuplicate) {
+      attendedKeys.add(`${student.nis}|${selectedMapel.toLowerCase()}`);
       showResult(`${student.nama} sudah absen di mata pelajaran ${selectedMapel} hari ini.`, 'warning');
       // Jangan proses QR yang sama lagi selama 5 detik setelah server selesai.
       lastScanCode = student.qr.trim().toUpperCase();
       lastScanTime = Date.now();
     } else if (response && response.success) {
+      attendedKeys.add(`${student.nis}|${selectedMapel.toLowerCase()}`);
       showResult(`${student.nama} berhasil absen di ${selectedMapel}.`, 'success');
       lastScanCode = student.qr.trim().toUpperCase();
       lastScanTime = Date.now();
@@ -157,6 +160,16 @@ function handleScan(decodedText) {
       processing = false;
       lastScanCode = '';
     }, 1500);
+    return;
+  }
+
+  const attendanceKey = `${student.nis}|${selectedMapel.toLowerCase()}`;
+
+  // Kunci absensi di browser selama halaman ini masih terbuka.
+  // Jadi satu siswa tidak bisa mengirim absensi mapel yang sama berkali-kali.
+  if (attendedKeys.has(attendanceKey)) {
+    showResult(`${student.nama} sudah absen di mata pelajaran ${selectedMapel} hari ini.`, 'warning');
+    processing = false;
     return;
   }
 
